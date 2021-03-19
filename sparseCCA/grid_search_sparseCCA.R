@@ -73,7 +73,6 @@ run_sparseCCA <- function(X, Z, CCA.K, penaltyX, penaltyZ, vInit=NULL, outputFil
     sink()
   }
   
-  ## Inspired by code from Engelhardt's paper: https://github.com/daniel-munro/imageCCA/blob/master/run_CCA.R
   ## add rownames to output factors
   rownames(CCA.out$u) <- colnames(X)
   rownames(CCA.out$v) <- colnames(Z)
@@ -120,14 +119,11 @@ save_CCA_components <- function(CCA.out, CCA.K, dirname){
 dataset <- "CRC/case"
 
 ## load gene expression and microbiome tables
-# genes <- load_gene_expr("./data/clean/CRC/gene_expr/tumor_protein_coding_vsd_t.txt") #[1]    44 16685
 genes <- load_gene_expr("./data/clean/CRC/gene_expr/tumor_protein_coding_vsd_SDfilt_t.txt")
-dim(genes) #[1]    44 12513
-# microbes <- load_microbiome_abnd("./data/clean/CRC/taxa_abnd/tumor_taxa_filt_clr_w_gender.txt") #[1]  44 229 -- old code
-# microbes <- load_microbiome_abnd("./data/clean/CRC/taxa_abnd/tumor_taxa_clr_t_no_contam.txt")
+dim(genes) 
 microbes <- load_microbiome_abnd("./data/clean/CRC/taxa_abnd/tumor_taxa_clr_t_no_contam_0.001_0.1_V3.txt")
 dim(microbes) 
-# [1]  44 235
+
 
 ## Ensure same sampleIDs in both genes and microbes data before sparse CCA
 stopifnot(all(rownames(genes) == rownames(microbes)))
@@ -153,7 +149,6 @@ for( i in 1:length(penaltyX)){
       ##debug
       print(paste0("Index: i = ",i,", j =", j," k = ",k)); flush.console()
       #compute weights with sample k held out:
-      # Default niter = 15 edited to 5 to speed this up.
       res <- CCA(X[-k,],Y[-k,], penaltyx = penaltyX[i], penaltyz = penaltyY[j], K=1, niter = 5, trace = F)
       ## Compute scores for k'th sample for first pair of canonical variables
       ## Take weight of features (res$u and res$v) computed using all except 
@@ -170,7 +165,6 @@ for( i in 1:length(penaltyX)){
 end_time <- Sys.time()
 time_elapsed <- end_time - start_time
 print(paste0("Time elapsed for CRC = ", time_elapsed))
-# [1] "Time elapsed for CRC = 50.9241799155871"
 
 row.names(corr_CRC) <- as.character(penaltyX)
 colnames(corr_CRC) <- as.character(penaltyY)
@@ -297,15 +291,10 @@ save_CCA_components(cca[[1]],sig,dirname)
 dataset <- "IBD/case"
 
 ## load gene expression and microbiome tables
-# genes <- load_gene_expr("./data/clean/IBD/gene_expr/IBD_protein_coding_vsd_t.txt") #[1]    56 15980
 genes <- load_gene_expr("./data/clean/IBD/gene_expr/IBD_protein_coding_vsd_SDfilt_t.txt")
 dim(genes) #[1]    56 11985
-# microbes <- load_microbiome_abnd("./data/clean/IBD/taxa_abnd/IBD_taxa_filt_clr_w_gender.txt") #[1]   56 72
-# microbes <- load_microbiome_abnd("./data/clean/IBD/taxa_abnd/IBD_taxa_clr_t.txt")
 microbes <- load_microbiome_abnd("./data/clean/IBD/taxa_abnd/IBD_taxa_clr_t_no_contam_0.001_0.1.txt")
 dim(microbes) 
-#[1]  56 127
-# [1]  56 121 -- 3/16/2020, post contam removal. 
 
 ## Ensure same sampleIDs in both genes and microbes data before sparse CCA
 stopifnot(all(rownames(genes) == rownames(microbes)))
@@ -326,7 +315,6 @@ for( i in 1:length(penaltyX)){
     for(k in 1:num_samples){
       print(paste0("Index: i = ",i,", j =", j," k = ",k)); flush.console()
       #compute weights with sample k held out:
-      # Default niter = 15 edited to 5 to speed this up.
       res <- CCA(X[-k,],Y[-k,], penaltyx = penaltyX[i], penaltyz = penaltyY[j], K=1, niter = 5, trace = F)
       ###compute scores for k'th sample for first pair of canonical variables
       scoreXcv[k] <- X[k,]%*%res$u
@@ -338,7 +326,6 @@ for( i in 1:length(penaltyX)){
 end_time <- Sys.time()
 time_elapsed <- end_time - start_time
 print(paste0("Time elapsed for IBD = ", time_elapsed))
-# [1] "Time elapsed for IBD = 1.20009556584888" ## assuming this is in hours.
 
 row.names(corr_IBD) <- as.character(penaltyX)
 colnames(corr_IBD) <- as.character(penaltyY)
@@ -457,7 +444,8 @@ sig <- which(corr_padj < 0.1)
 dirname <- paste0("./data/analysis/",dataset,"/output_sparseCCA_V2/grid_search/gene_taxa_components/sig_gene_taxa_components_",bestpenaltyX,"_", bestpenaltyY,"_padj/")
 ## This will return FALSE if the directory already exists or is uncreatable, 
 ## and TRUE if it didn't exist but was succesfully created.
-# save_CCA_components(cca[[1]],sig,dirname)
+ifelse(!dir.exists(dirname), dir.create(dirname), FALSE)
+save_CCA_components(cca[[1]],sig,dirname)
 
 
 ########### IBS ###################
@@ -465,14 +453,11 @@ dirname <- paste0("./data/analysis/",dataset,"/output_sparseCCA_V2/grid_search/g
 dataset <- "IBS/case"
 
 ## load gene expression and microbiome tables
-# genes <- load_gene_expr("./data/clean/IBS/gene_expr/IBS_protein_coding_vsd_t.txt") #[1]    29 16568
+
 genes <- load_gene_expr("./data/clean/IBS/gene_expr/IBS_protein_coding_vsd_SDfilt_t.txt")
-dim(genes) #[1]    29 12429
-# microbes <- load_microbiome_abnd("./data/clean/IBS/taxa_abnd/IBS_taxa_avg_T1_T2_filt_clr_w_gender.txt") #[1]  29 177
-# microbes <- load_microbiome_abnd("./data/clean/IBS/taxa_abnd/IBS_taxa_clr_t.txt")
+dim(genes) 
 microbes <- load_microbiome_abnd("./data/clean/IBS/taxa_abnd/IBS_taxa_clr_t_no_contam_0.001_0.1.txt")
-dim(microbes) 
-# [1]  29 238
+dim(microbes)
 
 ## Ensure same sampleIDs in both genes and microbes data before sparse CCA
 stopifnot(all(rownames(genes) == rownames(microbes)))
@@ -493,7 +478,6 @@ for( i in 1:length(penaltyX)){
     for(k in 1:num_samples){
       print(paste0("Index: i = ",i,", j =", j," k = ",k)); flush.console()
       #compute weights with sample k held out:
-      # Default niter = 15 edited to 5 to speed this up.
       res <- CCA(X[-k,],Y[-k,], penaltyx = penaltyX[i], penaltyz = penaltyY[j], K=1, niter = 5, trace = F)
       ###compute scores for k'th sample for first pair of canonical variables
       scoreXcv[k] <- X[k,]%*%res$u
@@ -505,7 +489,6 @@ for( i in 1:length(penaltyX)){
 end_time <- Sys.time()
 time_elapsed <- end_time - start_time
 print(paste0("Time elapsed for IBS = ", time_elapsed))
-# [1] "Time elapsed for IBS = 26.7878766496976"
 
 row.names(corr_IBS) <- as.character(penaltyX)
 colnames(corr_IBS) <- as.character(penaltyY)
@@ -517,12 +500,6 @@ colnames(corr_IBS_df)
 # ## save to file
 # write.table(corr_IBS_df, file = paste0("./data/analysis/",dataset,"/output_sparseCCA_V2/grid_search/corr_IBS_0.1_0.4.txt"), sep="\t", row.names = T, col.names = NA )
 # save(corr_IBS, file = paste0("./data/analysis/",dataset,"/output_sparseCCA_V2/grid_search/corr_IBS_0.1_0.4.RData"))
-
-## load precomputed grid-search output
-# dataset <- "IBS/case"
-# penaltyX <- seq(0.1,0.4,length=10)
-# penaltyY <- seq(0.15,0.4,length=10)
-# load(paste0("./data/analysis/",dataset,"/output_sparseCCA_V2/grid_search/corr_IBS_0.1_0.4.RData"))
 
 # ## find index with max corr
 bestpenalty <- which(corr_IBS == max(corr_IBS), arr.ind = TRUE)
