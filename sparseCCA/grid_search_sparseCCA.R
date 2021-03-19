@@ -1,5 +1,5 @@
 ## Author: Sambhawa Priya
-## PhD candidate, Blekhman Lab
+## Blekhman Lab
 ## priya030@umn.edu
 
 ## This code implements grid search for sparse CCA analysis
