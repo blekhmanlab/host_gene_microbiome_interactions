@@ -4,7 +4,9 @@
 
 ## This code implements gene-wise lasso model to identify set of gut microbes 
 ## associated with host gene expression. We use desparsified lasso for inference
-## and 95% CI for host gene-microbe associations. 
+## and 95% CI for host gene-microbe associations.
+
+## This code is run in parallel on MSI supercomputing nodes.
 
 rm(list=ls()) ## ## check to make sure no precomputed dataframe before clearing
 
@@ -40,14 +42,8 @@ print(paste0("output.dir: ",output.dir))
 
 ################# Input genes and taxa matrix ###########
 
-## could be  generalized further by passing as arg. For now good for debugging.
-# data.frame(fread(filename, sep="\t", head=T), stringsAsFactors = F, check.names = F, comment.char = "")
 genes <- read.table(input.genes.table,sep="\t",head=T, row.names = 1, check.names = F); dim(genes)
 microbes <- read.table(input.microbiome.table,sep="\t",head=T, row.names = 1, check.names =F); dim(microbes)
-
-## Transform genes to make samples as rows and features as columns
-# genes <- t(genes)
-# microbes <- t(microbes) ## these already have samples as rows
 
 ## Ensure same sampleIDs in both genes and microbes matrices
 stopifnot(all(rownames(genes) == rownames(microbes)))
@@ -56,18 +52,8 @@ stopifnot(all(rownames(genes) == rownames(microbes)))
 y <- as.matrix(genes) #response
 x <- as.matrix(microbes) #predictors
 
-## In downstream analysis, estimateSigma() throws error with duplicated columns in x. 
-## Hence let's fix it here
-# any(duplicated(x, MARGIN = 2))
-# # [1] TRUE
-# which(duplicated(x, MARGIN = 2))
-# 45 
-## Figure out later why this is duplicated.
-## [1] "Bacteria;Bacteroidetes;Flavobacteriia;Flavobacteriales"
-
 x.uniq <- unique(x, MARGIN = 2)
 dim(x.uniq)
-# [1]  44 228
 x <- x.uniq
 
 print(paste0("# genes = ",dim(y)[2]))
@@ -125,8 +111,7 @@ estimate.sigma <- function(x, y_i, bestlambda, tol) {
   
 }
 
-## Edit: Aug 10, 2019: Inspired from the details for estimateSigma() function in selectiveInference package: https://cran.r-project.org/web/packages/selectiveInference/selectiveInference.pdf 
-## Seems very close to the computation of sigma in hdi lasso package: do.initial.fit() in https://github.com/cran/hdi/blob/master/R/helpers.R
+## Inspired from the details for estimateSigma() function in selectiveInference package: https://cran.r-project.org/web/packages/selectiveInference/selectiveInference.pdf
 estimate.sigma.loocv <- function(x, y_i, bestlambda, tol) {
   
   lasso.fit = glmnet(x,y_i,alpha = 1)
@@ -178,26 +163,7 @@ fit.cv.lasso <- function(x, y_i, kfold, repeats){
       r.sqr.final.adj[i] <- adj_r_squared(r.sqr.final[i], n = nrow(x), 
                                           p = sum(as.vector(coef(fit$glmnet.fit, 
                                                                  s = fit$lambda.min)) > 0))
-      ## cross-validated test-set R^2
-      ## Adapted from: https://rpubs.com/kaz_yos/alasso
-      # test_R2 <- lapply(unique(fit$foldid), function(id) {
-      #   ## Fit excluding test set (foldid == id)
-      #   # print(id); flush.console()
-      #   fit <- glmnet(x = x[fit$foldid != id,],
-      #                 y = y_i[fit$foldid != id],
-      #                 alpha = 1,
-      #                 lambda = fit$lambda.min) ## glmnet manual advises against proving single lambda value.  
-      #   ## Test-set Y_hat using model fit at best lambda
-      #   y_pred <- predict(fit, newx = x[fit$foldid == id,], s = fit$lambda.min)
-      #   ## Test-set Y
-      #   y <- y_i[fit$foldid == id]
-      #   ## Test-set R^2
-      #   r_sqr <- 1 - sum((y - y_pred)^2) / sum((y - mean(y))^2)
-      #   # print(r_sqr)
-      #   return(r_sqr)
-      # })
-      # 
-      # r.sqr.CV.test[i] <- median(unlist(test_R2))
+      
   }
   
   # take mean cvm for each lambda
@@ -208,12 +174,12 @@ fit.cv.lasso <- function(x, y_i, kfold, repeats){
   bestlambda = lambdas[bestindex,1]
   
   return(list(bestlambda = bestlambda, r.sqr = median(r.sqr.final), 
-              r.sqr.adj = median(r.sqr.final.adj) #, r.sqr.CV.test = median(r.sqr.CV.test)
+              r.sqr.adj = median(r.sqr.final.adj)
               ))
 }
 
 ## functions to compute R2
-## Borrowed from: https://rpubs.com/kaz_yos/alasso
+## Adapted from https://rpubs.com/kaz_yos/alasso
 r_squared <- function(y, yhat) {
   ybar <- mean(y)
   ## Total SS
@@ -240,13 +206,8 @@ estimate.sigma.fit.hdi <- function(x, y, gene_name){
     sapply(pkg, require, character.only = TRUE)
   }
   
-  packages <- c("glmnet","hdi","methods","doParallel") ## package methods is not loaded by default by RScript. 
+  packages <- c("glmnet","hdi","methods","doParallel") ## package methods is not loaded by default by RScript on MSI 
   check.packages(packages)
-  
-  ## Debug for local test
-  # library(glmnet)
-  # library(hdi)
-  # gene_name <- "SNX21" ## debug for a specific gene
   
   print(paste0("Processing gene:", gene_name));flush.console()
   
@@ -261,15 +222,12 @@ estimate.sigma.fit.hdi <- function(x, y, gene_name){
   bestlambda <- fit.model$bestlambda
   r.sqr <- fit.model$r.sqr
   r.sqr.adj <- fit.model$r.sqr.adj
-  # r.sqr.CV.test <- fit.model$r.sqr.CV.test
  
   ## Estimate sigma using the estimated lambda param
   sigma.myfun <- estimate.sigma.loocv(x, y_i, bestlambda, tol=1e-4)
   sigma <- sigma.myfun$sigmahat
   beta <- as.vector(sigma.myfun$betahat)[-1]
   sigma.flag <- sigma.myfun$sigmaflag
-  
-  ## Edit: Aug 10. Add Filter here to compute inference for only the genes with R2 > 0.25. This is our current pipeline. 
   
   ## Inference 
   lasso.proj.fit <- lasso.proj(x, y_i, multiplecorr.method = "BH", betainit = beta, sigma = sigma, suppress.grouptesting = T)
@@ -282,12 +240,7 @@ estimate.sigma.fit.hdi <- function(x, y, gene_name){
                              sigma = sigma, sigma.flag = sigma.flag,
                              row.names=NULL)
   
-  ##local debug
-  # View(lasso.FDR.df)
-  
-  ## Edit Oct 23, 2019 -- No need to save the intermediate RData files. 
-  # save(lasso.FDR.df, file=paste0(output.dir,"/",gene_name,"_lasso_hdi.RData")) 
-  
+ 
   return(lasso.FDR.df)
   
 }
@@ -304,9 +257,6 @@ registerDoSEQ()
 
 ## time taken for parallel computation.
 print(parallel_time)
-
-## Print result for all the genes processed 
-# print(parallel_res)
 
 ## Print result for this node's genes list
 filename <- strsplit(input.genes.list,"/")
