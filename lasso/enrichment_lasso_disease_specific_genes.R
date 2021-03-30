@@ -41,16 +41,6 @@ msigdb_enrichment <- function(pathway_DB, pathways, background_genes, genes_of_i
   enrichment_list <- list()
   for(i in 1:length(pathways)){
     
-    ## debug
-    # i <- 56
-    # pathway_DB <- msigdb_C2_CP
-    # pathways <- msigdb_C2_CP_unique_pathways
-    # background_genes <- background_genes
-    # ## for now, check 1st overlap set
-    # genes_of_interest <- unlist(strsplit(as.character(overlap_combined_df$overlap_genes[1]), split = ","))
-    # 
-    ## debug
-    
     pathway <- pathways[i]
     
     ## genes in this pathway
@@ -95,8 +85,6 @@ msigdb_enrichment <- function(pathway_DB, pathways, background_genes, genes_of_i
     k #839
     
     ## Build the contigency table
-    ## Good explanation here: https://stats.stackexchange.com/questions/72553/which-statistical-test-should-be-used-to-test-for-enrichment-of-gene-lists
-    ## Matches orientation of contingency rows and col of DAVID: https://david.ncifcrf.gov/content.jsp?file=functional_annotation.html
     contingency_table <- matrix(c(x, k-x, m-x, n-(k-x)), #matrix is filled along the column by default
                                 nrow = 2, ncol = 2, 
                                 dimnames = list(c("In_pathway","Not_in_pathway"),
@@ -104,26 +92,9 @@ msigdb_enrichment <- function(pathway_DB, pathways, background_genes, genes_of_i
     )
     
     contingency_table
-    #                       Genes_of_interest Genes_NOT_of_interest
-    # In_pathway                     1                    10
-    # Not_in_pathway               838                 11664
+    
     
     fisher_result <- fisher.test( contingency_table, alternative = "greater")
-    #print(fisher_result)
-    # Fisher's Exact Test for Count Data
-    # data:  contingency_table
-    # p-value = 8.934e-06
-    # alternative hypothesis: true odds ratio is greater than 1
-    # 95 percent confidence interval:
-    #   2.620139      Inf
-    # sample estimates:
-    #   odds ratio 
-    # 4.555846 
-    
-    ## For debugging, check with hypergeometric test
-    # phyper_pval <- phyper(x-1, m-x, n-(k-x), k, lower.tail = F)
-    # phyper_pval
-    # 1-sum(dhyper(0:(x-1),m-x, n-(k-x), k))
     
     ## save details in a dataframe
     enrichment_result_df <- data.frame( pathway = pathway,
