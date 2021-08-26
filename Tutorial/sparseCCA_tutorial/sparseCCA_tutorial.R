@@ -120,7 +120,7 @@ tune_params_grid_search <- function( X, Y){
   return (c(bestpenaltyX,bestpenaltyY))
 }
 
-test_significance_LOOCV < function(X, Y, bestpenaltyX, bestpenaltyY, num_components){
+test_significance_LOOCV <- function(X, Y, bestpenaltyX, bestpenaltyY, num_components){
   cca.k = num_components
   scoresXcv <- matrix(nrow = nrow(X), ncol = cca.k)
   scoresYcv <-  matrix(nrow = nrow(Y), ncol = cca.k)
