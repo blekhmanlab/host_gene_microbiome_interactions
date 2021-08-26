@@ -83,6 +83,8 @@ ifelse(!dir.exists(dirname), dir.create(dirname), FALSE)
 save_CCA_components(cca[[1]],sig,dirname)
 ```
 
+For further processing to perform enrichment analysis on selected genes, visualization of CCA components, etc., please check here (add link).
+
 ### 2. Lasso
 
 Demo data for download:
