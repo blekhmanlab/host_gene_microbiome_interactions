@@ -120,6 +120,30 @@ tune_params_grid_search <- function( X, Y){
   return (c(bestpenaltyX,bestpenaltyY))
 }
 
+test_significance_LOOCV < function(X, Y, bestpenaltyX, bestpenaltyY, num_components){
+  cca.k = num_components
+  scoresXcv <- matrix(nrow = nrow(X), ncol = cca.k)
+  scoresYcv <-  matrix(nrow = nrow(Y), ncol = cca.k)
+  corr_pval <- c()
+  corr_r <- c()
+  for(i in 1:nrow(genes)){ #n = no. of samples
+    #compute weights with sample i held out:
+    res <- CCA(X[-i,],Y[-i,], penaltyx=bestpenaltyX, penaltyz=bestpenaltyY, K=cca.k, trace = F) ## default niter = 15 which is spit out when trace = T (default)
+    ###compute scores for i'th sample for each component (pair of canonical variables)
+    for(j in 1:cca.k){
+      print(paste0("i = ", i," K = ", j)); flush.console()
+      scoresXcv[i,j] <- X[i,]%*%res$u[,j]
+      scoresYcv[i,j] <- Y[i,]%*%res$v[,j]
+    }
+  }
+  ## Test for each components
+  for(j in 1:cca.k){
+    corr <- cor.test(scoresXcv[,j],scoresYcv[,j]) ## Pearson correlation.
+    corr_pval[j] <- corr$p.value
+  }
+  corr_pval
+}
+
 ########## Tune and run sparse CCA #########
 
 #### load data 
@@ -136,8 +160,7 @@ dim(microbes)
 stopifnot(all(rownames(genes) == rownames(microbes)))
 
 ## select tuning parameters
-bestPenalty <- tune_params_grid_search()
-
+bestPenalty <- tune_params_grid_search(genes,microbes)
 bestpenaltyX <- bestPenalty[1]
 bestpenaltyY <- bestPenalty[2]
 
@@ -158,43 +181,19 @@ avg.microbes <- get_avg_features(cca[[1]]$v, cca.k)
 avg.microbes
 
 #### Test significance of components using LOOCV
-X <- genes
-Y <- microbes
-cca.k = 10
-scoresXcv <- matrix(nrow = nrow(X), ncol = cca.k)
-scoresYcv <-  matrix(nrow = nrow(Y), ncol = cca.k)
-corr_pval <- c()
-corr_r <- c()
-for(i in 1:nrow(genes)){ #n = no. of samples
-  #compute weights with sample i held out:
-  res <- CCA(X[-i,],Y[-i,], penaltyx=bestpenaltyX, penaltyz=bestpenaltyY, K=cca.k, trace = F) ## default niter = 15 which is spit out when trace = T (default)
-  ###compute scores for i'th sample for each component (pair of canonical variables)
-  for(j in 1:cca.k){
-    print(paste0("i = ", i," K = ", j)); flush.console()
-    scoresXcv[i,j] <- X[i,]%*%res$u[,j]
-    scoresYcv[i,j] <- Y[i,]%*%res$v[,j]
-  }
-}
-## Test for each components
-for(j in 1:cca.k){
-  # plot(scoresXcv,scoresYcv)
-  corr <- cor.test(scoresXcv[,j],scoresYcv[,j]) ## Pearson correlation.
-  corr_pval[j] <- corr$p.value
-  corr_r[j] <- corr$estimate
-}
-corr_pval
+CCA_pval <- test_significance_LOOCV(genes, microbes, bestpenaltyX, bestpenaltyY, cca.k)
 
-length(which(corr_pval < 0.1)) 
-which(corr_pval < 0.1)
+length(which(CCA_pval < 0.1)) 
+which(CCA_pval < 0.1)
 
-corr_padj <- p.adjust(corr_pval, method = "BH")
-corr_padj
+CCA_padj <- p.adjust(CCA_pval, method = "BH")
+CCA_padj
 
-which(corr_padj < 0.1)
-length(which(corr_padj < 0.1))
+length(which(CCA_padj < 0.1))
+which(CCA_padj < 0.1)
 
 #### Output significant components
-sig <- which(corr_padj < 0.1)
+sig <- which(CCA_padj < 0.1)
 dirname <- paste0("./sparseCCA_output_demo/gene_taxa_components/sig_gene_taxa_components_",bestpenaltyX,"_", bestpenaltyY,"_padj/")
 ## This will return FALSE if the directory already exists or is uncreatable, 
 ## and TRUE if it didn't exist but was succesfully created.
