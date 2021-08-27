@@ -115,8 +115,8 @@ x <- microbes
 
 #### 2: Fit lasso model using LOOCV and perform inference
 
-## Extract the expression for this gene (response variable)
-y_i <- y[,grep(paste0("^",gene_name,"$"),colnames(y))]
+## Extract the expression for each gene
+y_i <- y[,i]
 
 ## Make sure y_i is numeric before model fitting 
 stopifnot(class(y_i) == "numeric")
@@ -151,16 +151,6 @@ lasso.FDR.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)),
 #### 3: Stability selection
 ## set a seed for replicability
 set.seed(0511)
-
-gene_name <- "WNT5A" ## debug for a specific gene
-
-print(paste0("Processing gene:",gene_name)); flush.console()
-
-## Extract the expression for this gene (response variable)
-y_i <- y[,grep(paste0("^",gene_name,"$"),colnames(y))]
-
-## Debug: make sure y_i is numeric before model fitting 
-stopifnot(class(y_i) == "numeric")
 
 ## perform stability selection using glmnet lasso
 stab.glmnet <- stabsel(x = x, y = y_i,
