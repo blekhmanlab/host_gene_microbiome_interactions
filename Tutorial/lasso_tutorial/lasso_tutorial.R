@@ -122,7 +122,7 @@ y_i <- y[,grep(paste0("^",gene_name,"$"),colnames(y))]
 stopifnot(class(y_i) == "numeric")
 
 ## Fit lasso CV model
-fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i), repeats = 1)
+fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
 bestlambda <- fit.model$bestlambda
 r.sqr <- fit.model$r.sqr
 
