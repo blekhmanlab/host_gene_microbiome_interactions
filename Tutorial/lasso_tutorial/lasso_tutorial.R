@@ -19,12 +19,44 @@ load_microbiome_abnd <- function(filename){
   
 }
 
+fit.cv.lasso <- function(x, y_i, kfold){
+  
+  lambdas = NULL
+  r.sqr.final <- numeric()
+  r.sqr.final.adj <- numeric()
+  
+  ## glmnet CV
+  cv.fit <- cv.glmnet(x, y_i, alpha=1, nfolds=kfold, type.measure = "mse", keep =TRUE, grouped=FALSE)  
+  lambdas = data.frame(cv.fit$lambda,cv.fit$cvm)
+  
+  ## get best lambda -- lambda that gives min cvm
+  bestlambda <- cv.fit$lambda.min
+  bestlambda_index <- which(cv.fit$lambda == bestlambda)
+  
+  ## Get R^2 of full model (fitted at lambda.min)
+  final_model <- cv.fit$glmnet.fit
+  r_sqr_final_model <- cv.fit$glmnet.fit$dev.ratio[bestlambda_index]
+  # r.sqr.final <- r_squared(as.vector(y_i), 
+  #                             as.vector(predict(fit$glmnet.fit, 
+  #                                               newx = x, s = fit$lambda.min)))
+  # all.equal(r.sqr.final, r_sqr_final_model) ## all.equal uses some toleranceå
+  # # [1] TRUE
+  
+  ## Get adjusted R^2
+  r_sqr_final_adj <- adj_r_squared(r_sqr_final_model, n = nrow(x), 
+                                   p = sum(as.vector(coef(fit$glmnet.fit, 
+                                                          s = fit$lambda.min)) > 0))
+  
+  return(list(bestlambda = bestlambda, r.sqr = r_sqr_final_model, 
+              r.sqr.adj = r_sqr_final_adj))
+}
+
 estimate.sigma.loocv <- function(x, y_i, bestlambda, tol) {
   
   ## Our implementation matches do.initial.fit() in hdi code:
   ## https://github.com/cran/hdi/blob/master/R/helpers.R.
-  ## The only difference is they use optimal lambda as lambda.1SE computed using 10-fold CV, 
-  ## while we use lambda.min estimated using LOOCV that we have passed to this function as input.
+  ## The only difference is they compute optimal lambda using 10-fold CV, 
+  ## while we compute lambda using LOOCV that we have passed to this function as "bestlambda"
   ## Our logic for this function also matches description for estimateSigma() from selectiveInference package:
   ## https://cran.r-project.org/web/packages/selectiveInference/selectiveInference.pdf
   ## "A lasso regression is fit, using cross-validation to estimate the tuning parameter lambda. With sample size
@@ -48,16 +80,16 @@ estimate.sigma.loocv <- function(x, y_i, bestlambda, tol) {
   
   if((n-df-1) >= 1) {
     sigma = sqrt(ss_res / (n-df-1))
-    sigma.flag = 0
   } else{
     sigma = 1 ## conservative option
-    sigma.flag = 2
   }
   
   
-  return(list(sigmahat = sigma, sigmaflag = sigma.flag, betahat = beta)) ## we return beta to be used later in hdi function.
+  return(list(sigmahat = sigma, betahat = beta)) ## we return beta to be used later in hdi function.
   
 }
+
+
 
 
 ############# Run lasso to get associations ##########
