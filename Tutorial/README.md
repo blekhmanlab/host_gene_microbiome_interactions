@@ -94,10 +94,74 @@ Demo data for download:
 Link to script with all functions in Lasso tutorial
 
 Step 1: Read input data
+```R
+## load gene expression data
+genes <- load_gene_expr("gene_expr_demo.txt")
+dim(genes)
 
-Step 2: Fit lasso model and perform inference using HDI
+## load microbiome data
+microbes <- load_microbiome_abnd("microbiome_demo.txt")
+dim(microbes)
+
+## Ensure same samples in both genes and microbes data
+stopifnot(all(rownames(genes) == rownames(microbes)))
+
+y <- genes
+x <- microbes
+```
+
+Step 2: Fit lasso model and perform inference using desparsified lasso
+```R
+## Extract the expression for each gene
+y_i <- y[,i]
+
+## Make sure y_i is numeric before model fitting 
+stopifnot(class(y_i) == "numeric")
+
+## Fit lasso CV model
+fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
+bestlambda <- fit.model$bestlambda
+r.sqr <- fit.model$r.sqr
+
+## Estimate sigma using the estimated lambda param
+sigma.myfun <- estimate.sigma.loocv(x, y_i, bestlambda, tol=1e-4)
+sigma <- sigma.myfun$sigmahat
+beta <- as.vector(sigma.myfun$betahat)[-1]
+
+## Inference 
+lasso.proj.fit <- lasso.proj(x, y_i, multiplecorr.method = "BH", betainit = beta, sigma = sigma, suppress.grouptesting = T)
+## Throws warning because we substituted our computed sigma (standard deviation of error term or noise)
+# Warning message:
+#   Overriding the error variance estimate with your own value.
+
+## get 95% CI
+lasso.ci <- as.data.frame(confint(lasso.proj.fit, level = 0.95))
+
+## collect all metrics
+lasso.FDR.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)), 
+                           taxa = names(lasso.proj.fit$pval), 
+                           full_model_r_sqr = r.sqr,
+                           pval = lasso.proj.fit$pval, 
+                           ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
+                           row.names=NULL)
+```
+
 
 Step 3: Stability selection
+
+```R
+## set a seed for replicability
+set.seed(0511)
+
+stab.glmnet <- stabsel(x = x, y = y_i,
+                       fitfun = glmnet.lasso, cutoff = 0.6,
+                       PFER = 1)
+
+taxa.selected <- names(stab.glmnet$selected)
+if(length(taxa.selected) == 0) taxa.selected <-"None"
+
+taxa.selected
+```
 
 Step 4: Merge output from 2. and 3. to get associations
 
