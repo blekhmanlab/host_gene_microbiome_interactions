@@ -19,6 +19,10 @@ load_microbiome_abnd <- function(filename){
   
 }
 
+adj_r_squared <- function(r_squared, n, p) {
+  1 - (1 - r_squared) * (n - 1) / (n - p - 1)
+}
+
 fit.cv.lasso <- function(x, y_i, kfold){
   
   lambdas = NULL
@@ -50,6 +54,7 @@ fit.cv.lasso <- function(x, y_i, kfold){
   return(list(bestlambda = bestlambda, r.sqr = r_sqr_final_model, 
               r.sqr.adj = r_sqr_final_adj))
 }
+
 
 estimate.sigma.loocv <- function(x, y_i, bestlambda, tol) {
   
@@ -88,8 +93,6 @@ estimate.sigma.loocv <- function(x, y_i, bestlambda, tol) {
   return(list(sigmahat = sigma, betahat = beta)) ## we return beta to be used later in hdi function.
   
 }
-
-
 
 
 ############# Run lasso to get associations ##########
