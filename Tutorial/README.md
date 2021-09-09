@@ -4,11 +4,9 @@ This tutorial demonstrates integration methods used for joint analysis of host t
 ### 1. Sparse CCA
 Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination of subsets of variables from two datasets such that they are maximally correlated. We will apply this approach to identify groups of host genes that are associated with groups of microbial taxa.   
 
-#### Directory structure
+#### Setting up input and output
 
-Download the directory _sparseCCA_tutorial_ at a relevant location on your computer. Place the Rscript _sparseCCA_tutorial.R_ in the directory.
-
-Link to script with all functions in sparse CCA tutorial
+Download the folder _sparseCCA_tutorial_ (include downloadable zip here) at a relevant location on your computer. This folder includes the Rscript _sparseCCA_tutorial.R_ with all functions used in sparse CCA tutorial, an input folder for demo (i.e. _gene_expresion_demo_sp_CCA.txt_ and _microbiome_demo_sp_CCA.txt_), and an output folder. Execute _sparseCCA_tutorial.R_ to load all libraries and functions, and follow the steps below.    
 
 #### Step 1: Read input data
 
