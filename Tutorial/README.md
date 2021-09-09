@@ -6,7 +6,7 @@ Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination
 
 #### Setting up input and output
 
-Download the folder _sparseCCA_tutorial_ (include downloadable zip here) at a relevant location on your computer. This folder includes the Rscript _sparseCCA_tutorial.R_ with all functions used in sparse CCA tutorial, an input folder with demo dataset (i.e. _gene_expresion_demo_sp_CCA.txt_ and _microbiome_demo_sp_CCA.txt_), and an output folder. 
+Download the folder [_sparseCCA_tutorial_](https://github.com/blekhmanlab/host_gene_microbiome_interactions/blob/main/Tutorial/sparseCCA_tutorial.zip) at a relevant location on your computer. This folder includes the Rscript _sparseCCA_tutorial.R_ with all functions used in sparse CCA tutorial, an input folder with demo dataset (i.e. _gene_expresion_demo_sp_CCA.txt_ and _microbiome_demo_sp_CCA.txt_), and an output folder. 
 Execute the script _sparseCCA_tutorial.R_ to load all libraries and functions, and follow the steps below.    
 
 #### Step 1: Read input data
