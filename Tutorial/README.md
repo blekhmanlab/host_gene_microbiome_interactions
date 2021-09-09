@@ -6,12 +6,14 @@ Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination
 
 #### Setting up input and output
 
-Download the folder _sparseCCA_tutorial_ (include downloadable zip here) at a relevant location on your computer. This folder includes the Rscript _sparseCCA_tutorial.R_ with all functions used in sparse CCA tutorial, an input folder for demo (i.e. _gene_expresion_demo_sp_CCA.txt_ and _microbiome_demo_sp_CCA.txt_), and an output folder. Execute the script _sparseCCA_tutorial.R_ to load all libraries and functions, and follow the steps below.    
+Download the folder _sparseCCA_tutorial_ (include downloadable zip here) at a relevant location on your computer. This folder includes the Rscript _sparseCCA_tutorial.R_ with all functions used in sparse CCA tutorial, an input folder with demo dataset (i.e. _gene_expresion_demo_sp_CCA.txt_ and _microbiome_demo_sp_CCA.txt_), and an output folder. 
+Execute the script _sparseCCA_tutorial.R_ to load all libraries and functions, and follow the steps below.    
 
 #### Step 1: Read input data
 
 ```R
 ## In Rstudio, find the path to the directory where the current script is located.
+## If not using Rstudio, _current_dir_ should point to your working directory for this demo.
 current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
 
 ## load gene expression data
@@ -48,7 +50,7 @@ bestpenaltyY <- bestPenalty[2]
 ## Set the number of desired CCA components
 cca.k = 10
 
-## Create a folder named "sparseCCA_output_demo" in your current working directory for this demo.
+## run sparse CCA
 cca <- run_sparseCCA(genes, microbes, cca.k, bestpenaltyX, bestpenaltyY,
                      outputFile=paste0(current_dir,"/output/CCA_demo_output_",bestpenaltyX,"_",bestpenaltyY,".txt"))
 
@@ -60,7 +62,7 @@ avg.microbes <- get_avg_features(cca[[1]]$v, cca.k)
 avg.microbes
 ```
 
-#### Step 4: Test significance of components using leave-one-out-cross-validation
+#### Step 4: Test significance of components using leave-one-out cross-validation
 
 ```R
 ## This will take ~1 min to run. 
@@ -87,6 +89,7 @@ dirname <- dirname <- paste0(current_dir,"/output/demo_gene_taxa_components/")
 ifelse(!dir.exists(dirname), dir.create(dirname), FALSE)
 save_CCA_components(cca[[1]],sig,dirname)
 ```
+Each output sparse CCA component includes a set of host genes that are correlated with a set of taxa. It also includes non-zero weights (or canonical loadings) on gut microbes, and non-zero weights on a subset of host genes correlated with those gut microbes to capture joint variation in the two sets of observations.   
 
 For further processing to visualize sparse CCA components, perform enrichment analysis on selected genes, etc., please check here (add link).
 
