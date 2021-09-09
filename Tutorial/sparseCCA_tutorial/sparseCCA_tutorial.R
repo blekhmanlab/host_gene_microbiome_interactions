@@ -140,7 +140,7 @@ test_significance_LOOCV <- function(X, Y, bestpenaltyX, bestpenaltyY, num_compon
     res <- CCA(X[-i,],Y[-i,], penaltyx=bestpenaltyX, penaltyz=bestpenaltyY, K=cca.k, trace = F) ## default niter = 15 which is spit out when trace = T (default)
     ###compute scores for i'th sample for each component (pair of canonical variables)
     for(j in 1:cca.k){
-      print(paste0("i = ", i," K = ", j)); flush.console()
+      #print(paste0("i = ", i," K = ", j)); flush.console()
       scoresXcv[i,j] <- X[i,]%*%res$u[,j]
       scoresYcv[i,j] <- Y[i,]%*%res$v[,j]
     }
@@ -210,7 +210,8 @@ length(which(CCA_padj < 0.1))
 which(CCA_padj < 0.1)
 
 #### Output significant components
-sig <- which(CCA_padj < 0.1)
+sig_cutoff <- 0.1 
+sig <- which(CCA_padj < sig_cutoff)
 dirname <- paste0(current_dir,"/output/demo_gene_taxa_components/")
 ## This will return FALSE if the directory already exists or is uncreatable, 
 ## and TRUE if it didn't exist but was succesfully created.
