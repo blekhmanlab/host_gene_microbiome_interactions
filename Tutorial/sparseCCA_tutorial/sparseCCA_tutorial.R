@@ -1,6 +1,5 @@
 ## Sparse CCA tutorial
-
-## install and import libraries
+## Sambhawa Priya
 
 ## Install and import libraries
 check.packages <- function(pkg){
