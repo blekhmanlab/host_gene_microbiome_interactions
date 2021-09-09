@@ -13,7 +13,7 @@ Execute the script _sparseCCA_tutorial.R_ to load all libraries and functions, a
 
 ```R
 ## In Rstudio, find the path to the directory where the current script is located.
-## If not using Rstudio, _current_dir_ should point to your working directory for this demo.
+## If not using Rstudio, current_dir should point to your working directory for this demo.
 current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
 
 ## load gene expression data
