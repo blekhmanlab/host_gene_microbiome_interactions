@@ -1,6 +1,9 @@
 ## Tutorial
+TODO: Add a short description here about overall goal of this tutorial and work it relates to.
 
 ### 1. Sparse CCA
+TODO: Add a short description here about sparse CCA analysis.
+
 
 Demo data for download: 
 - gene expression data
@@ -12,11 +15,11 @@ Step 1: Read input data
 
 ```R
 ## load gene expression data
-genes <- load_gene_expr("gene_expresion_demo.txt")
+genes <- load_gene_expr("gene_expresion_demo_sCCA.txt")
 dim(genes)
 
 ## load microbiome data
-microbes <- load_microbiome_abnd("microbiome_demo.txt")
+microbes <- load_microbiome_abnd("microbiome_demo_sCCA.txt")
 dim(microbes)
 
 ## Ensure same samples in both genes and microbes data
@@ -25,7 +28,7 @@ stopifnot(all(rownames(genes) == rownames(microbes)))
 
 Step 2: Tune hyperparameters
 
-This step uses grid-search that takes a while, so we precomputed penalty values for demo dataset that you can set and skip to Step 3.
+This step uses grid-search that takes a while to run, so we precomputed penalty values for demo dataset that you can set as follows, and skip to Step 3.
 ```R
 bestpenaltyX <- 0.05
 bestpenaltyY <- 0.3222
@@ -96,11 +99,11 @@ Link to script with all functions in Lasso tutorial
 Step 1: Read input data
 ```R
 ## load gene expression data
-genes <- load_gene_expr("gene_expr_demo.txt")
+genes <- load_gene_expr("gene_expr_demo_lasso.txt")
 dim(genes)
 
 ## load microbiome data
-microbes <- load_microbiome_abnd("microbiome_demo.txt")
+microbes <- load_microbiome_abnd("microbiome_demo_lasso.txt")
 dim(microbes)
 
 ## Ensure same samples in both genes and microbes data
