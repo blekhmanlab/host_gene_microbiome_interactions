@@ -158,11 +158,11 @@ test_significance_LOOCV <- function(X, Y, bestpenaltyX, bestpenaltyY, num_compon
 ## In Rstudio, find the path to the directory where the current script is located.
 current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
 
-#### load data 
+#### load data
 
 ## load gene expression data
 genes <- load_gene_expr(paste0(current_dir,"/input/gene_expresion_demo_sp_CCA.txt"))
-dim(genes) 
+dim(genes)
 
 ## load microbiome data
 microbes <- load_microbiome_abnd(paste0(current_dir,"/input/microbiome_demo_sp_CCA.txt"))
@@ -200,7 +200,7 @@ avg.microbes
 #### Test significance of components using LOOCV
 CCA_pval <- test_significance_LOOCV(genes, microbes, bestpenaltyX, bestpenaltyY, cca.k)
 
-length(which(CCA_pval < 0.1)) 
+length(which(CCA_pval < 0.1))
 which(CCA_pval < 0.1)
 
 CCA_padj <- p.adjust(CCA_pval, method = "BH")
@@ -210,10 +210,10 @@ length(which(CCA_padj < 0.1))
 which(CCA_padj < 0.1)
 
 #### Output significant components
-sig_cutoff <- 0.1 
+sig_cutoff <- 0.1
 sig <- which(CCA_padj < sig_cutoff)
 dirname <- paste0(current_dir,"/output/demo_gene_taxa_components/")
-## This will return FALSE if the directory already exists or is uncreatable, 
+## This will return FALSE if the directory already exists or is uncreatable,
 ## and TRUE if it didn't exist but was succesfully created.
 ifelse(!dir.exists(dirname), dir.create(dirname), FALSE)
 save_CCA_components(cca[[1]],sig,dirname)
