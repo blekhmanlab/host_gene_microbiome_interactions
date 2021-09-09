@@ -2,16 +2,15 @@
 This tutorial demonstrates integration methods used for joint analysis of host transcriptomic and microbiome data as described in _Priya et al. "Shared and disease-specific host gene-microbiome interactions across human diseases"_.
 
 ### 1. Sparse CCA
-Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination of subsets of variables from two datasets such that they are maximally correlated. We apply this approach to identify groups of host genes that associate with groups of microbial taxa as shown below.   
+Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination of subsets of variables from two datasets such that they are maximally correlated. We will apply this approach to identify groups of host genes that are associated with groups of microbial taxa.   
 
+#### Directory structure
 
-Demo data for download: 
-- gene expression data
-- microbiome data
+Create a directory named _sparseCCA_tutorial_ at a relevant location on your computer. Place the Rscript _sparseCCA_tutorial.R_ in the directory.
 
 Link to script with all functions in sparse CCA tutorial
 
-Step 1: Read input data
+#### Step 1: Read input data
 
 ```R
 ## In Rstudio, find the path to the directory where the current script is located.
@@ -29,7 +28,7 @@ dim(microbes)
 stopifnot(all(rownames(genes) == rownames(microbes)))
 ```
 
-Step 2: Tune hyperparameters
+#### Step 2: Tune hyperparameters
 
 This step uses grid-search that takes a while to run, so we've pre-computed penalty values for the demo dataset that you can set as follows, and skip to Step 3.
 ```R
@@ -45,7 +44,7 @@ bestpenaltyX <- bestPenalty[1]
 bestpenaltyY <- bestPenalty[2]
 ```
 
-Step 3: Run sparse CCA
+#### Step 3: Run sparse CCA
 
 ```R
 ## Set the number of desired CCA components
@@ -63,25 +62,27 @@ avg.microbes <- get_avg_features(cca[[1]]$v, cca.k)
 avg.microbes
 ```
 
-Step 4: Test significance of components using leave-one-out-cross-validation
+#### Step 4: Test significance of components using leave-one-out-cross-validation
 
 ```R
-## This will take 1-2 mins to run. 
+## This will take ~1 min to run. 
 CCA_pval <- test_significance_LOOCV(genes, microbes, bestpenaltyX, bestpenaltyY, cca.k)
 
+## which components have p-value < 0.1
 length(which(CCA_pval < 0.1)) 
 which(CCA_pval < 0.1)
 
+## adjust for multiple testing
 CCA_padj <- p.adjust(CCA_pval, method = "BH")
-
 length(which(CCA_padj < 0.1))
 which(CCA_padj < 0.1)
 ```
 
-Step 5. Output significant components at FDR < 0.1
+#### Step 5. Output significant components
 
 ```R
-sig <- which(CCA_padj < 0.1)
+sig_cutoff <- 0.1 
+sig <- which(CCA_padj < sig_cutoff)
 dirname <- dirname <- paste0(current_dir,"/output/demo_gene_taxa_components/")
 ## This returns returns true if directory didn't exist but was successfully created,
 ## and returns false if the directory already exists or can't be created.
