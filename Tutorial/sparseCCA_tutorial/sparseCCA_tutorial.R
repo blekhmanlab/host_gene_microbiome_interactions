@@ -155,23 +155,31 @@ test_significance_LOOCV <- function(X, Y, bestpenaltyX, bestpenaltyY, num_compon
 
 ########## Tune and run sparse CCA #########
 
+## In Rstudio, find the path to the directory where the current script is located.
+current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+
 #### load data 
 
 ## load gene expression data
-genes <- load_gene_expr("gene_expresion_demo.txt")
+genes <- load_gene_expr(paste0(current_dir,"/input/gene_expresion_demo_sp_CCA.txt"))
 dim(genes) 
 
 ## load microbiome data
-microbes <- load_microbiome_abnd("microbiome_demo.txt")
+microbes <- load_microbiome_abnd(paste0(current_dir,"/input/microbiome_demo_sp_CCA.txt"))
 dim(microbes)
 
 ## Ensure same sampleIDs in both genes and microbes data before sparse CCA
 stopifnot(all(rownames(genes) == rownames(microbes)))
 
+## set penalty parameters
+bestpenaltyX <- 0.05
+bestpenaltyY <- 0.3222
+
+## SKIP if using pre-computed values above
 ## select tuning parameters
-bestPenalty <- tune_params_grid_search(genes,microbes)
-bestpenaltyX <- bestPenalty[1]
-bestpenaltyY <- bestPenalty[2]
+# bestPenalty <- tune_params_grid_search(genes,microbes)
+# bestpenaltyX <- bestPenalty[1]
+# bestpenaltyY <- bestPenalty[2]
 
 #### Run sparse CCA
 
@@ -180,7 +188,7 @@ cca.k = 10
 
 ## Run sparse CCA using selected tuning param using permutation search
 cca <- run_sparseCCA(genes, microbes, cca.k, bestpenaltyX, bestpenaltyY,
-                     outputFile=paste0("./sparseCCA_output_demo/CCA.output.",bestpenaltyX,"_",bestpenaltyY,".txt"))
+                     outputFile=paste0(current_dir,"/output/CCA_demo_output_",bestpenaltyX,"_",bestpenaltyY,".txt"))
 
 ## average number of genes and microbes in resulting components
 avg_genes <- get_avg_features(cca[[1]]$u, cca.k)
@@ -203,7 +211,7 @@ which(CCA_padj < 0.1)
 
 #### Output significant components
 sig <- which(CCA_padj < 0.1)
-dirname <- paste0("./sparseCCA_output_demo/gene_taxa_components/sig_gene_taxa_components_",bestpenaltyX,"_", bestpenaltyY,"_padj/")
+dirname <- paste0(current_dir,"/output/demo_gene_taxa_components/")
 ## This will return FALSE if the directory already exists or is uncreatable, 
 ## and TRUE if it didn't exist but was succesfully created.
 ifelse(!dir.exists(dirname), dir.create(dirname), FALSE)
