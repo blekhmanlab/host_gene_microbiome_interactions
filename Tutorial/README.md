@@ -6,7 +6,7 @@ Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination
 
 #### Directory structure
 
-Create a directory named _sparseCCA_tutorial_ at a relevant location on your computer. Place the Rscript _sparseCCA_tutorial.R_ in the directory.
+Download the directory _sparseCCA_tutorial_ at a relevant location on your computer. Place the Rscript _sparseCCA_tutorial.R_ in the directory.
 
 Link to script with all functions in sparse CCA tutorial
 
