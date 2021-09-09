@@ -14,12 +14,15 @@ Link to script with all functions in sparse CCA tutorial
 Step 1: Read input data
 
 ```R
+## In Rstudio, find the path to the directory where the current script is located.
+current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+
 ## load gene expression data
-genes <- load_gene_expr("gene_expresion_demo_sCCA.txt")
+genes <- load_gene_expr(paste0(current_dir,"/input/gene_expresion_demo_sp_CCA.txt"))
 dim(genes)
 
 ## load microbiome data
-microbes <- load_microbiome_abnd("microbiome_demo_sCCA.txt")
+microbes <- load_microbiome_abnd(paste0(current_dir,"/input/microbiome_demo_sp_CCA.txt"))
 dim(microbes)
 
 ## Ensure same samples in both genes and microbes data
@@ -28,14 +31,14 @@ stopifnot(all(rownames(genes) == rownames(microbes)))
 
 Step 2: Tune hyperparameters
 
-This step uses grid-search that takes a while to run, so we precomputed penalty values for demo dataset that you can set as follows, and skip to Step 3.
+This step uses grid-search that takes a while to run, so we've pre-computed penalty values for the demo dataset that you can set as follows, and skip to Step 3.
 ```R
 bestpenaltyX <- 0.05
 bestpenaltyY <- 0.3222
 ```
 
 ```R
-## Skip this if using pre-computed values
+## Skip to Step 3 if using pre-computed values above
 ## select tuning parameters using grid-search
 bestPenalty <- tune_params_grid_search(genes,microbes)
 bestpenaltyX <- bestPenalty[1]
@@ -50,7 +53,7 @@ cca.k = 10
 
 ## Create a folder named "sparseCCA_output_demo" in your current working directory for this demo.
 cca <- run_sparseCCA(genes, microbes, cca.k, bestpenaltyX, bestpenaltyY,
-                     outputFile=paste0("./sparseCCA_output_demo/CCA.output.",bestpenaltyX,"_",bestpenaltyY,".txt"))
+                     outputFile=paste0(current_dir,"/output/CCA_demo_output_",bestpenaltyX,"_",bestpenaltyY,".txt"))
 
 ## average number of genes and microbes in resulting components
 avg_genes <- get_avg_features(cca[[1]]$u, cca.k)
@@ -60,16 +63,16 @@ avg.microbes <- get_avg_features(cca[[1]]$v, cca.k)
 avg.microbes
 ```
 
-Step 4: Test significance of components using LOOCV
+Step 4: Test significance of components using leave-one-out-cross-validation
 
 ```R
+## This will take 1-2 mins to run. 
 CCA_pval <- test_significance_LOOCV(genes, microbes, bestpenaltyX, bestpenaltyY, cca.k)
 
 length(which(CCA_pval < 0.1)) 
 which(CCA_pval < 0.1)
 
 CCA_padj <- p.adjust(CCA_pval, method = "BH")
-CCA_padj
 
 length(which(CCA_padj < 0.1))
 which(CCA_padj < 0.1)
@@ -79,14 +82,14 @@ Step 5. Output significant components at FDR < 0.1
 
 ```R
 sig <- which(CCA_padj < 0.1)
-dirname <- paste0("./sparseCCA_output_demo/gene_taxa_components/sig_gene_taxa_components_",bestpenaltyX,"_", bestpenaltyY,"_padj/")
-## This returns False if the directory already exists or can't be created, 
-## returns True if it didn't exist but was successfully created.
+dirname <- dirname <- paste0(current_dir,"/output/demo_gene_taxa_components/")
+## This returns returns true if directory didn't exist but was successfully created,
+## and returns false if the directory already exists or can't be created.
 ifelse(!dir.exists(dirname), dir.create(dirname), FALSE)
 save_CCA_components(cca[[1]],sig,dirname)
 ```
 
-For further processing to perform enrichment analysis on selected genes, visualization of CCA components, etc., please check here (add link).
+For further processing to visualize sparse CCA components, perform enrichment analysis on selected genes, etc., please check here (add link).
 
 ### 2. Lasso
 
