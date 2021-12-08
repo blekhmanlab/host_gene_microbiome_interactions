@@ -1,5 +1,5 @@
 ## Tutorial
-This tutorial demonstrates integration methods used for joint analysis of host transcriptomic and microbiome data as described in _Priya et al. "Shared and disease-specific host gene-microbiome interactions across human diseases"_.
+This tutorial demonstrates integration methods used for joint analysis of host transcriptomic and microbiome data as described in _Priya et al. "Shared and disease-specific host gene-microbiome associations across human diseases"_.
 
 ### 1. Sparse CCA
 Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination of subsets of variables from two datasets such that they are maximally correlated. We will apply this approach to identify groups of host genes that are associated with groups of microbial taxa.   
