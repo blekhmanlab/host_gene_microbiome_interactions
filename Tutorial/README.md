@@ -2,7 +2,7 @@
 This tutorial demonstrates integration methods used for joint analysis of host transcriptomic and microbiome data as described in _Priya et al. "Shared and disease-specific host gene-microbiome associations across human diseases"_.
 
 ### 1. Sparse CCA
-Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination of subsets of variables from two datasets such that they are maximally correlated. We will apply this approach to identify groups of host genes that are associated with groups of microbial taxa.   
+Sparse Canonical Correlation Analysis (sparse CCA) identifies linear combination of subsets of variables from two datasets such that they are maximally correlated (Witten et al. 2009). We will apply this approach to identify groups of host genes that are associated with groups of microbial taxa.   
 
 #### Setting up input and output
 
@@ -95,16 +95,21 @@ For further processing to visualize sparse CCA components, perform enrichment an
 
 ### 2. Lasso
 
-Demo data for download:
-- gene expression data
-- microbiome data
+Lasso is a penalized regression approach that uses shrinkage or regularization to perform variable selection (Tibshirani et al. 1996). We will use lasso penalized regression to identify specific associations between individual host genes and gut microbial taxa. We implement a gene-wise model using expression for each host gene as response and abundances of microbiome taxa as predictors, to identify microbial taxa that are correlated with a host gene. 
 
-Link to script with all functions in Lasso tutorial
+#### Setting up input and output
 
-Step 1: Read input data
+Download the folder [_lasso_tutorial.zip_](https://github.com/blekhmanlab/host_gene_microbiome_interactions/blob/main/Tutorial/lasso_tutorial.zip) at a relevant location on your computer. This folder includes the Rscript _lasso_tutorial.R_ with all functions used in the lasso tutorial and an input folder with demo dataset (i.e. _gene_expresion_demo_lasso.txt_ and _microbiome_demo_lasso.txt_). 
+Open and execute the script _lasso_tutorial.R_ to load all libraries and functions, and follow the steps below.
+
+#### Step 1: Read input data
 ```R
+## In Rstudio, find the path to the directory where the current script is located.
+current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+
+
 ## load gene expression data
-genes <- load_gene_expr("gene_expr_demo_lasso.txt")
+genes <- load_gene_expr(paste0(current_dir,"/input/gene_expr_demo_lasso.txt"))
 dim(genes)
 
 ## load microbiome data
