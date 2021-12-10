@@ -95,7 +95,7 @@ For further processing to visualize sparse CCA components, perform enrichment an
 
 ### 2. Lasso
 
-Lasso is a penalized regression approach that uses shrinkage or regularization to perform variable selection (Tibshirani et al. 1996). We will use lasso penalized regression to identify specific associations between individual host genes and gut microbial taxa. We implement a gene-wise model using expression for each host gene as response and abundances of microbiome taxa as predictors, to identify microbial taxa that are correlated with a host gene. 
+Lasso is a penalized regression approach that uses shrinkage or regularization to perform variable selection (Tibshirani et al. 1996). We will use lasso penalized regression to identify specific associations between individual host genes and gut microbial taxa. To identify microbial taxa that are correlated with a host gene, we model host gene as response and abundances of microbiome taxa as independent variables. 
 
 #### Setting up input and output
 
