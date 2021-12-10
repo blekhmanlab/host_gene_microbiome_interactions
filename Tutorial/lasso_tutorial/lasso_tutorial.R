@@ -1,11 +1,25 @@
-## Lasso tutorial script
+## Lasso tutorial
+## Sambhawa Priya
 
-## import libraries
-library(glmnet)
-library(hdi)
-library(stabs)
+## Goal
+## Our aim in this tutorial is to show how to run our lasso analysis on a small set of genes (~2-3 genes)
+## to identify host gene-taxa associations for the demo dataset.
+
+
+## Install and import libraries
+check.packages <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE, repos = "http://cran.us.r-project.org")
+  sapply(pkg, require, character.only = TRUE)
+}
+
+packages <- c("glmnet","data.table","hdi","stabs") 
+check.packages(packages)
 
 ############## Functions ###############
+
+## Please execute these functions
 
 load_gene_expr <- function(filename){
   genes <- data.frame(fread(filename,sep="\t",head=T), row.names = 1, check.names = F, stringsAsFactors = F)
@@ -19,8 +33,35 @@ load_microbiome_abnd <- function(filename){
   
 }
 
-adj_r_squared <- function(r_squared, n, p) {
-  1 - (1 - r_squared) * (n - 1) / (n - p - 1)
+estimate.sigma.loocv <- function(x, y_i, bestlambda, tol) {
+  
+
+  ## Fit a lasso object
+  lasso.fit = glmnet(x,y_i,alpha = 1) ## this is same as cv.fit$glmnet.fit from loocv code below.
+  beta <- as.vector(coef(lasso.fit, s = bestlambda)) ## This gives coefficients of fitted model, not predicted coeff.
+  # try(if(length(which(abs(beta) > tol)) > n) stop(" selected predictors more than number of samples! Abort function"))
+  
+  y = as.vector(y_i)
+  
+  yhat = as.vector(predict(lasso.fit, newx = x, s = bestlambda))
+  ## predicted coefficients, same as coefficient of fitted model lasso. Either one is fine.
+  # beta = predict(lasso.fit,s=bestlambda, type="coef")
+  df = sum(abs(beta) > tol) ## Number of non-zero coeff. Floating-point precision/tolerance used instead of checking !=0
+  n = length(y_i)
+  ss_res = sum((y - yhat)^2)
+  
+  if((n-df-1) >= 1) {
+    sigma = sqrt(ss_res / (n-df-1))
+    sigma.flag = 0
+  } else{
+    sigma = 1 ## conservative option
+    # sigma = ss_res ## lenient option
+    sigma.flag = 2
+  }
+  
+  
+  return(list(sigmahat = sigma, sigmaflag = sigma.flag, betahat = beta)) ## we return beta to be used later in hdi function.
+  
 }
 
 fit.cv.lasso <- function(x, y_i, kfold){
@@ -28,95 +69,85 @@ fit.cv.lasso <- function(x, y_i, kfold){
   lambdas = NULL
   r.sqr.final <- numeric()
   r.sqr.final.adj <- numeric()
+  r.sqr.CV.test <- numeric()
+  lasso.cv.list <- list()
   
   ## glmnet CV
-  cv.fit <- cv.glmnet(x, y_i, alpha=1, nfolds=kfold, type.measure = "mse", keep =TRUE, grouped=FALSE)  
+  cv.fit <- cv.glmnet(x, y_i, alpha=1, nfolds=kfold, type.measure = "mse", keep =TRUE, grouped=FALSE, standardize = T)  
   lambdas = data.frame(cv.fit$lambda,cv.fit$cvm)
   
   ## get best lambda -- lambda that gives min cvm
   bestlambda <- cv.fit$lambda.min
   bestlambda_index <- which(cv.fit$lambda == bestlambda)
   
-  ## Get R^2 of full model (fitted at lambda.min)
+  ## Get R^2 of final model
   final_model <- cv.fit$glmnet.fit
   r_sqr_final_model <- cv.fit$glmnet.fit$dev.ratio[bestlambda_index]
-  # r.sqr.final <- r_squared(as.vector(y_i), 
-  #                             as.vector(predict(fit$glmnet.fit, 
-  #                                               newx = x, s = fit$lambda.min)))
-  # all.equal(r.sqr.final, r_sqr_final_model) ## all.equal uses some toleranceå
-  # # [1] TRUE
   
   ## Get adjusted R^2
   r_sqr_final_adj <- adj_r_squared(r_sqr_final_model, n = nrow(x), 
-                                   p = sum(as.vector(coef(fit$glmnet.fit, 
-                                                          s = fit$lambda.min)) > 0))
+                                   p = sum(as.vector(coef(cv.fit$glmnet.fit, 
+                                                          s = cv.fit$lambda.min)) > 0))
   
   return(list(bestlambda = bestlambda, r.sqr = r_sqr_final_model, 
-              r.sqr.adj = r_sqr_final_adj))
+              r.sqr.adj = r_sqr_final_adj #, r.sqr.CV.test = median(r.sqr.CV.test)
+  ))
+}
+
+## functions to compute R2
+r_squared <- function(y, yhat) {
+  ybar <- mean(y)
+  ## Total SS
+  ss_tot <- sum((y - ybar)^2)
+  ## Residual SS
+  ss_res <- sum((y - yhat)^2)
+  ## R^2 = 1 - ss_res/ ss_tot
+  1 - (ss_res / ss_tot)
+}
+## Function for Adjusted R^2
+## n sample size, p number of prameters
+adj_r_squared <- function(r_squared, n, p) {
+  1 - (1 - r_squared) * (n - 1) / (n - p - 1)
 }
 
 
-estimate.sigma.loocv <- function(x, y_i, bestlambda, tol) {
-  
-  ## Our implementation matches do.initial.fit() in hdi code:
-  ## https://github.com/cran/hdi/blob/master/R/helpers.R.
-  ## The only difference is they compute optimal lambda using 10-fold CV, 
-  ## while we compute lambda using LOOCV that we have passed to this function as "bestlambda"
-  ## Our logic for this function also matches description for estimateSigma() from selectiveInference package:
-  ## https://cran.r-project.org/web/packages/selectiveInference/selectiveInference.pdf
-  ## "A lasso regression is fit, using cross-validation to estimate the tuning parameter lambda. With sample size
-  ## n, yhat equal to the predicted values and df being the number of nonzero coefficients from the
-  ## lasso fit, the estimate of sigma is sqrt(sum((y-yhat)^2) / (n-df-1))."
-  
-  ## Fit a lasso object
-  lasso.fit = glmnet(x,y_i,alpha = 1) ## this is same as cv.fit$glmnet.fit from loocv code below.
-  beta <- as.vector(coef(lasso.fit, s = bestlambda)) 
-  
-  y = as.vector(y_i)
-  ## same as hdi code used for computing residual.vector
-  ## residual.vector <- y-predict(glmnetfit,newx=x,s=lambda).
-  ## In hdi, lambda was computed using 10 fold cv
-  ## while here we use lambda computed from our LOOCV code (bestlambda).
-  
-  yhat = as.vector(predict(lasso.fit, newx = x, s = bestlambda))
-  df = sum(abs(beta) > tol) ## Number of non-zero coeff. Floating-point precision/tolerance used instead of checking !=0
-  n = length(y_i)
-  ss_res = sum((y - yhat)^2)
-  
-  if((n-df-1) >= 1) {
-    sigma = sqrt(ss_res / (n-df-1))
-  } else{
-    sigma = 1 ## conservative option
-  }
-  
-  
-  return(list(sigmahat = sigma, betahat = beta)) ## we return beta to be used later in hdi function.
-  
-}
+############## Input lasso demo data #############
+
+## Steps:
+## Create a directory called "lasso_tutorial" at a relevant location on your computer.
+## Place the script in the directory lasso_tutorial.
+## Inside lasso_tutorial, create a directory called "input" and place the demo data for lasso
+## (i.e. gene_expr_demo_lasso.txt and microbiome_demo_lasso.txt) there.
+## Execute next steps.
+
+## In Rstudio, find the path to the directory where the current script is located.
+current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+## current_dir should point to path of "lasso_tutorial".
 
 
-############# Run lasso to get associations ##########
+genes <- load_gene_expr(paste0(current_dir,"/input/gene_expr_demo_lasso.txt"))
+dim(genes) #[1]    44 3
 
-#### 1: Read data
+## load microbiome data (note, here we load microbiome data with sex covariate)
+microbes <- load_microbiome_abnd(paste0(current_dir,"/input/microbiome_demo_lasso.txt"))
+dim(microbes) #[1]  44 236 -- 235 taxa + 1 sex covariate
 
-## load gene expression data
-genes <- load_gene_expr("gene_expr_demo.txt")
-dim(genes)
 
-## load microbiome data
-microbes <- load_microbiome_abnd("microbiome_demo.txt")
-dim(microbes)
-
-## Ensure same samples in both genes and microbes data
+## Ensure same sampleIDs in both genes and microbes data before sparse CCA
 stopifnot(all(rownames(genes) == rownames(microbes)))
 
-y <- genes
-x <- microbes
+y <- genes #response
+x <- microbes #predictors
 
-#### 2: Fit lasso model using LOOCV and perform inference
 
-## Extract the expression for each gene
-y_i <- y[,i]
+############ Fit lasso model and test inference using HDI ############
+
+## We are going to test three genes: WNT5A, RIPK3, and SMAP2 for their association with microbes
+
+## Extract expression of first gene in the matrix
+i <- 1 ## replace with 2 or 3 to test other two genes
+y_i <- y[,i] 
+gene_name <- colnames(y)[i]
 
 ## Make sure y_i is numeric before model fitting 
 stopifnot(class(y_i) == "numeric")
@@ -124,31 +155,50 @@ stopifnot(class(y_i) == "numeric")
 ## Fit lasso CV model
 fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
 bestlambda <- fit.model$bestlambda
-r.sqr <- fit.model$r.sqr
+r.sqr <- fit.model$r.sqr ## note this will give us R^2 for the gene's final model fit using bestLambda 
+## This R^2 reflects final model R^2 for this gene using all the microbes in the model, 
+## and does not correspond to each gene-microbe pair. 
+r.sqr.adj <- fit.model$r.sqr.adj
 
-## Estimate sigma using the estimated lambda param
+## Estimate sigma and betainit using the estimated LOOCV lambda.
+## Sigma is the standard deviation of the error term or noise.
 sigma.myfun <- estimate.sigma.loocv(x, y_i, bestlambda, tol=1e-4)
 sigma <- sigma.myfun$sigmahat
-beta <- as.vector(sigma.myfun$betahat)[-1]
+beta <- as.vector(sigma.myfun$betahat)[-1] ## remove intercept term
+sigma.flag <- sigma.myfun$sigmaflag
 
-## Inference 
+## Inference using lasso projection method, also known as the de-sparsified Lasso,
+## using an asymptotic gaussian approximation to the distribution of the estimator.
 lasso.proj.fit <- lasso.proj(x, y_i, multiplecorr.method = "BH", betainit = beta, sigma = sigma, suppress.grouptesting = T)
-## Throws warning because we substituted our computed sigma (standard deviation of error term or noise)
+## A few lines of log messages appear here along with a warning about substituting sigma value (standard deviation of error term or noise)
+## because we substituted value of sigma using our computation above.
 # Warning message:
 #   Overriding the error variance estimate with your own value.
 
-## get 95% CI
+## get 95% confidence interval (CI)
 lasso.ci <- as.data.frame(confint(lasso.proj.fit, level = 0.95))
 
-## collect all metrics
-lasso.FDR.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)), 
-                           taxa = names(lasso.proj.fit$pval), 
-                           full_model_r_sqr = r.sqr,
-                           pval = lasso.proj.fit$pval, 
-                           ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
-                           row.names=NULL)
+## prep lasso output dataframe
+lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)), 
+                       taxa = names(lasso.proj.fit$pval.corr), 
+                       r.sqr = r.sqr, r.sqr.adj = r.sqr.adj,
+                       pval = lasso.proj.fit$pval, padj = lasso.proj.fit$pval.corr, 
+                       ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
+                       sigma = sigma, sigma.flag = sigma.flag,
+                       row.names=NULL)
 
-#### 3: Stability selection
+## get rid of unecessary columns
+lasso.df$r.sqr.adj <- NULL
+lasso.df$padj <- NULL
+lasso.df$sigma <- NULL
+lasso.df$sigma.flag <- NULL
+
+## sort by p-value
+lasso.df <- lasso.df[order(lasso.df$pval),]
+head(lasso.df)
+
+################# Stability selection #################
+
 ## set a seed for replicability
 set.seed(0511)
 
@@ -160,13 +210,24 @@ stab.glmnet <- stabsel(x = x, y = y_i,
 taxa.selected <- names(stab.glmnet$selected)
 if(length(taxa.selected) == 0) taxa.selected <-"None"
 
-taxa.selected
+# taxa.selected
 
-#### 4. Overlap results from Step 2 and 3.
+stabsel.df <- data.frame("gene" = gene_name, "taxa" = taxa.selected)
+if(taxa.selected == "none"){
+  stabsel.df$stability_selected = "no"
+}else stabsel.df$stability_selected = "yes"
 
+head(stabsel.df)
 
+################ Merge output of lasso+hdi and stabsel #################
 
+overlap_lasso_stabsel <- merge(lasso.df,stabsel.df, by = c("gene","taxa"))
+head(overlap_lasso_stabsel)
 
+## Explanation of the output
+# For first two genes at index 1 and 2 in y (i.e. WNT5A and RIPK3), a taxa is stability selected, 
+## however, for the 3rd gene, no taxa is stability selected, hence we have an empty dataframe after merging
+## outputs of lasso and stability selection.
 
-
-
+## In section "Fit lasso model and test inference using HDI", you can toggle index for 
+## y between 1, 2, and 3 to test the pipeline for different genes.
