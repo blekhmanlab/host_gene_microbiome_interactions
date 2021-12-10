@@ -150,13 +150,13 @@ sigma.flag <- sigma.myfun$sigmaflag
 ## Inference using lasso projection method, also known as the de-sparsified Lasso,
 ## using an asymptotic gaussian approximation to the distribution of the estimator.
 lasso.proj.fit <- lasso.proj(x, y_i, multiplecorr.method = "BH", betainit = beta, sigma = sigma, suppress.grouptesting = T)
-## A few lines of log messages appear here along with a warning about substituting sigma value (standard deviation of error term or noise)
-## because we substituted value of sigma using our computation above.
-# Warning message:
-#   Overriding the error variance estimate with your own value.
+## A few lines of log messages appear here along with a warning about substituting sigma value (i.e. standard deviation 
+## of error term or noise) because we substituted value of sigma using our computation above.
+## Warning message:
+##   Overriding the error variance estimate with your own value.
 
 
-## get 95% confidence interval (CI)
+## get 95% confidence interval for gene-taxa association
 lasso.ci <- as.data.frame(confint(lasso.proj.fit, level = 0.95))
 
 ## prep lasso output dataframe
@@ -168,7 +168,7 @@ lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)),
                        sigma = sigma, sigma.flag = sigma.flag,
                        row.names=NULL)
 
-## get rid of unecessary columns
+## remove columns not used downstream
 lasso.df$r.sqr.adj <- NULL
 lasso.df$padj <- NULL
 lasso.df$sigma <- NULL
@@ -178,7 +178,6 @@ lasso.df$sigma.flag <- NULL
 lasso.df <- lasso.df[order(lasso.df$pval),]
 head(lasso.df)
 ```
-
 
 #### Step 3: Stability selection
 
