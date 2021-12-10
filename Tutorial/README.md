@@ -91,7 +91,7 @@ save_CCA_components(cca[[1]],sig,dirname)
 ```
 Each output sparse CCA component includes a set of host genes that are correlated with a set of taxa. It also includes non-zero weights (or canonical loadings) on gut microbes, and non-zero weights on a subset of host genes correlated with those gut microbes to capture joint variation in the two sets of observations.   
 
-For further processing to visualize sparse CCA components, perform enrichment analysis on selected genes, etc., please check here (add link).
+For further processing to visualize sparse CCA components, perform enrichment analysis on selected genes, etc., please check [here](https://github.com/blekhmanlab/host_gene_microbiome_interactions/tree/main/sparseCCA).
 
 ### 2. Lasso
 
@@ -180,12 +180,13 @@ head(lasso.df)
 ```
 
 
-Step 3: Stability selection
+#### Step 3: Stability selection
 
 ```R
 ## set a seed for replicability
 set.seed(0511)
 
+## perform stability selection using glmnet lasso
 stab.glmnet <- stabsel(x = x, y = y_i,
                        fitfun = glmnet.lasso, cutoff = 0.6,
                        PFER = 1)
@@ -193,11 +194,25 @@ stab.glmnet <- stabsel(x = x, y = y_i,
 taxa.selected <- names(stab.glmnet$selected)
 if(length(taxa.selected) == 0) taxa.selected <-"None"
 
-taxa.selected
+stabsel.df <- data.frame("gene" = gene_name, "taxa" = taxa.selected)
+if(taxa.selected == "none"){
+  stabsel.df$stability_selected = "no"
+}else stabsel.df$stability_selected = "yes"
+
+head(stabsel.df)
 ```
 
-Step 4: Merge output from 2. and 3. to get associations
+#### Step 4: Merge output from steps 2. and 3. to get gene-taxa associations
+```R
+overlap_lasso_stabsel <- merge(lasso.df,stabsel.df, by = c("gene","taxa"))
+head(overlap_lasso_stabsel)
+```
+For first two genes at index 1 and 2 in y (i.e. WNT5A and RIPK3), a taxa is stability selected, however, for the 3rd gene, no taxa is stability selected, hence we have an empty dataframe after merging outputs of lasso and stability selection.
 
+In step 2. "Fit lasso model and test inference using desparsified lasso", you can toggle index for
+y between 1, 2, and 3 to test the pipeline for different genes.
+
+For further processing of lasso output, please check [here](https://github.com/blekhmanlab/host_gene_microbiome_interactions/tree/main/lasso).
 
 
 
