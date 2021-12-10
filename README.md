@@ -1,5 +1,5 @@
 # Host gene-microbiome associations
-A framework in R for identifying associations between gut microbiome composition and host gene expression in human diseases. These scripts are used in the study Priya et al. "Shared and disease-specific host gene-microbiome associations across human diseases".
+A framework in R for identifying associations between gut microbiome composition and host gene expression in human diseases. These scripts are used in the study _Priya et al. "Shared and disease-specific host gene-microbiome associations across human diseases"_ (under review).
 
 ### Description of scripts used in the sparse CCA pipeline:
 
