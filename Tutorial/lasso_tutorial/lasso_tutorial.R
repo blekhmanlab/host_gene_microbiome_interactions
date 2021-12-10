@@ -111,118 +111,111 @@ adj_r_squared <- function(r_squared, n, p) {
 }
 
 
-############## Input lasso demo data #############
-
-## Steps:
-## Create a directory called "lasso_tutorial" at a relevant location on your computer.
-## Place the script in the directory lasso_tutorial.
-## Inside lasso_tutorial, create a directory called "input" and place the demo data for lasso
-## (i.e. gene_expr_demo_lasso.txt and microbiome_demo_lasso.txt) there.
-## Execute next steps.
-
-## In Rstudio, find the path to the directory where the current script is located.
-current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
-## current_dir should point to path of "lasso_tutorial".
-
-
-genes <- load_gene_expr(paste0(current_dir,"/input/gene_expr_demo_lasso.txt"))
-dim(genes) #[1]    44 3
-
-## load microbiome data (note, here we load microbiome data with sex covariate)
-microbes <- load_microbiome_abnd(paste0(current_dir,"/input/microbiome_demo_lasso.txt"))
-dim(microbes) #[1]  44 236 -- 235 taxa + 1 sex covariate
-
-
-## Ensure same sampleIDs in both genes and microbes data before sparse CCA
-stopifnot(all(rownames(genes) == rownames(microbes)))
-
-y <- genes #response
-x <- microbes #predictors
-
-
-############ Fit lasso model and test inference using HDI ############
-
-## We are going to test three genes: WNT5A, RIPK3, and SMAP2 for their association with microbes
-
-## Extract expression of first gene in the matrix
-i <- 1 ## replace with 2 or 3 to test other two genes
-y_i <- y[,i] 
-gene_name <- colnames(y)[i]
-
-## Make sure y_i is numeric before model fitting 
-stopifnot(class(y_i) == "numeric")
-
-## Fit lasso CV model
-fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
-bestlambda <- fit.model$bestlambda
-r.sqr <- fit.model$r.sqr ## note this will give us R^2 for the gene's final model fit using bestLambda 
-## This R^2 reflects final model R^2 for this gene using all the microbes in the model, 
-## and does not correspond to each gene-microbe pair. 
-r.sqr.adj <- fit.model$r.sqr.adj
-
-## Estimate sigma and betainit using the estimated LOOCV lambda.
-## Sigma is the standard deviation of the error term or noise.
-sigma.myfun <- estimate.sigma.loocv(x, y_i, bestlambda, tol=1e-4)
-sigma <- sigma.myfun$sigmahat
-beta <- as.vector(sigma.myfun$betahat)[-1] ## remove intercept term
-sigma.flag <- sigma.myfun$sigmaflag
-
-## Inference using lasso projection method, also known as the de-sparsified Lasso,
-## using an asymptotic gaussian approximation to the distribution of the estimator.
-lasso.proj.fit <- lasso.proj(x, y_i, multiplecorr.method = "BH", betainit = beta, sigma = sigma, suppress.grouptesting = T)
-## A few lines of log messages appear here along with a warning about substituting sigma value (standard deviation of error term or noise)
-## because we substituted value of sigma using our computation above.
-# Warning message:
-#   Overriding the error variance estimate with your own value.
-
-## get 95% confidence interval (CI)
-lasso.ci <- as.data.frame(confint(lasso.proj.fit, level = 0.95))
-
-## prep lasso output dataframe
-lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)), 
-                       taxa = names(lasso.proj.fit$pval.corr), 
-                       r.sqr = r.sqr, r.sqr.adj = r.sqr.adj,
-                       pval = lasso.proj.fit$pval, padj = lasso.proj.fit$pval.corr, 
-                       ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
-                       sigma = sigma, sigma.flag = sigma.flag,
-                       row.names=NULL)
-
-## get rid of unecessary columns
-lasso.df$r.sqr.adj <- NULL
-lasso.df$padj <- NULL
-lasso.df$sigma <- NULL
-lasso.df$sigma.flag <- NULL
-
-## sort by p-value
-lasso.df <- lasso.df[order(lasso.df$pval),]
-head(lasso.df)
-
-################# Stability selection #################
-
-## set a seed for replicability
-set.seed(0511)
-
-## perform stability selection using glmnet lasso
-stab.glmnet <- stabsel(x = x, y = y_i,
-                       fitfun = glmnet.lasso, cutoff = 0.6,
-                       PFER = 1)
-
-taxa.selected <- names(stab.glmnet$selected)
-if(length(taxa.selected) == 0) taxa.selected <-"None"
-
-# taxa.selected
-
-stabsel.df <- data.frame("gene" = gene_name, "taxa" = taxa.selected)
-if(taxa.selected == "none"){
-  stabsel.df$stability_selected = "no"
-}else stabsel.df$stability_selected = "yes"
-
-head(stabsel.df)
-
-################ Merge output of lasso+hdi and stabsel #################
-
-overlap_lasso_stabsel <- merge(lasso.df,stabsel.df, by = c("gene","taxa"))
-head(overlap_lasso_stabsel)
+# ############## Input lasso demo data #############
+# 
+# ## In Rstudio, find the path to the directory where the current script is located.
+# current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+# ## current_dir should point to path of "lasso_tutorial".
+# 
+# 
+# genes <- load_gene_expr(paste0(current_dir,"/input/gene_expr_demo_lasso.txt"))
+# dim(genes) #[1]    44 3
+# 
+# ## load microbiome data (note, here we load microbiome data with sex covariate)
+# microbes <- load_microbiome_abnd(paste0(current_dir,"/input/microbiome_demo_lasso.txt"))
+# dim(microbes) #[1]  44 236 -- 235 taxa + 1 sex covariate
+# 
+# 
+# ## Ensure same sampleIDs in both genes and microbes data before sparse CCA
+# stopifnot(all(rownames(genes) == rownames(microbes)))
+# 
+# y <- genes #response
+# x <- microbes #predictors
+# 
+# 
+# ############ Fit lasso model and test inference using HDI ############
+# 
+# ## We are going to test three genes: WNT5A, RIPK3, and SMAP2 for their association with microbes
+# 
+# ## Extract expression of first gene in the matrix
+# i <- 1 ## replace with 2 or 3 to test other two genes
+# y_i <- y[,i] 
+# gene_name <- colnames(y)[i]
+# 
+# ## Make sure y_i is numeric before model fitting 
+# stopifnot(class(y_i) == "numeric")
+# 
+# ## Fit lasso CV model
+# fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
+# bestlambda <- fit.model$bestlambda
+# r.sqr <- fit.model$r.sqr ## note this will give us R^2 for the gene's final model fit using bestLambda 
+# ## This R^2 reflects final model R^2 for this gene using all the microbes in the model, 
+# ## and does not correspond to each gene-microbe pair. 
+# r.sqr.adj <- fit.model$r.sqr.adj
+# 
+# ## Estimate sigma and betainit using the estimated LOOCV lambda.
+# ## Sigma is the standard deviation of the error term or noise.
+# sigma.myfun <- estimate.sigma.loocv(x, y_i, bestlambda, tol=1e-4)
+# sigma <- sigma.myfun$sigmahat
+# beta <- as.vector(sigma.myfun$betahat)[-1] ## remove intercept term
+# sigma.flag <- sigma.myfun$sigmaflag
+# 
+# ## Inference using lasso projection method, also known as the de-sparsified Lasso,
+# ## using an asymptotic gaussian approximation to the distribution of the estimator.
+# lasso.proj.fit <- lasso.proj(x, y_i, multiplecorr.method = "BH", betainit = beta, sigma = sigma, suppress.grouptesting = T)
+# ## A few lines of log messages appear here along with a warning about substituting sigma value (standard deviation of error term or noise)
+# ## because we substituted value of sigma using our computation above.
+# # Warning message:
+# #   Overriding the error variance estimate with your own value.
+# 
+# ## get 95% confidence interval (CI)
+# lasso.ci <- as.data.frame(confint(lasso.proj.fit, level = 0.95))
+# 
+# ## prep lasso output dataframe
+# lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)), 
+#                        taxa = names(lasso.proj.fit$pval.corr), 
+#                        r.sqr = r.sqr, r.sqr.adj = r.sqr.adj,
+#                        pval = lasso.proj.fit$pval, padj = lasso.proj.fit$pval.corr, 
+#                        ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
+#                        sigma = sigma, sigma.flag = sigma.flag,
+#                        row.names=NULL)
+# 
+# ## get rid of unecessary columns
+# lasso.df$r.sqr.adj <- NULL
+# lasso.df$padj <- NULL
+# lasso.df$sigma <- NULL
+# lasso.df$sigma.flag <- NULL
+# 
+# ## sort by p-value
+# lasso.df <- lasso.df[order(lasso.df$pval),]
+# head(lasso.df)
+# 
+# ################# Stability selection #################
+# 
+# ## set a seed for replicability
+# set.seed(0511)
+# 
+# ## perform stability selection using glmnet lasso
+# stab.glmnet <- stabsel(x = x, y = y_i,
+#                        fitfun = glmnet.lasso, cutoff = 0.6,
+#                        PFER = 1)
+# 
+# taxa.selected <- names(stab.glmnet$selected)
+# if(length(taxa.selected) == 0) taxa.selected <-"None"
+# 
+# # taxa.selected
+# 
+# stabsel.df <- data.frame("gene" = gene_name, "taxa" = taxa.selected)
+# if(taxa.selected == "none"){
+#   stabsel.df$stability_selected = "no"
+# }else stabsel.df$stability_selected = "yes"
+# 
+# head(stabsel.df)
+# 
+# ################ Merge output of lasso+hdi and stabsel #################
+# 
+# overlap_lasso_stabsel <- merge(lasso.df,stabsel.df, by = c("gene","taxa"))
+# head(overlap_lasso_stabsel)
 
 ## Explanation of the output
 # For first two genes at index 1 and 2 in y (i.e. WNT5A and RIPK3), a taxa is stability selected, 
