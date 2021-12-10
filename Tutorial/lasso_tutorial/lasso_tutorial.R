@@ -112,7 +112,7 @@ adj_r_squared <- function(r_squared, n, p) {
 
 
 # ############## Input lasso demo data #############
-# 
+
 # ## In Rstudio, find the path to the directory where the current script is located.
 # current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
 # ## current_dir should point to path of "lasso_tutorial".
@@ -139,18 +139,18 @@ adj_r_squared <- function(r_squared, n, p) {
 # 
 # ## Extract expression of first gene in the matrix
 # i <- 1 ## replace with 2 or 3 to test other two genes
-# y_i <- y[,i] 
+# y_i <- y[,i]
 # gene_name <- colnames(y)[i]
 # 
-# ## Make sure y_i is numeric before model fitting 
+# ## Make sure y_i is numeric before model fitting
 # stopifnot(class(y_i) == "numeric")
 # 
 # ## Fit lasso CV model
 # fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
 # bestlambda <- fit.model$bestlambda
-# r.sqr <- fit.model$r.sqr ## note this will give us R^2 for the gene's final model fit using bestLambda 
-# ## This R^2 reflects final model R^2 for this gene using all the microbes in the model, 
-# ## and does not correspond to each gene-microbe pair. 
+# r.sqr <- fit.model$r.sqr ## note this will give us R^2 for the gene's final model fit using bestLambda
+# ## This R^2 reflects final model R^2 for this gene using all the microbes in the model,
+# ## and does not correspond to each gene-microbe pair.
 # r.sqr.adj <- fit.model$r.sqr.adj
 # 
 # ## Estimate sigma and betainit using the estimated LOOCV lambda.
@@ -172,10 +172,10 @@ adj_r_squared <- function(r_squared, n, p) {
 # lasso.ci <- as.data.frame(confint(lasso.proj.fit, level = 0.95))
 # 
 # ## prep lasso output dataframe
-# lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)), 
-#                        taxa = names(lasso.proj.fit$pval.corr), 
+# lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)),
+#                        taxa = names(lasso.proj.fit$pval.corr),
 #                        r.sqr = r.sqr, r.sqr.adj = r.sqr.adj,
-#                        pval = lasso.proj.fit$pval, padj = lasso.proj.fit$pval.corr, 
+#                        pval = lasso.proj.fit$pval, padj = lasso.proj.fit$pval.corr,
 #                        ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
 #                        sigma = sigma, sigma.flag = sigma.flag,
 #                        row.names=NULL)
@@ -218,9 +218,9 @@ adj_r_squared <- function(r_squared, n, p) {
 # head(overlap_lasso_stabsel)
 
 ## Explanation of the output
-# For first two genes at index 1 and 2 in y (i.e. WNT5A and RIPK3), a taxa is stability selected, 
+# For first two genes at index 1 and 2 in y (i.e. WNT5A and RIPK3), a taxa is stability selected,
 ## however, for the 3rd gene, no taxa is stability selected, hence we have an empty dataframe after merging
 ## outputs of lasso and stability selection.
 
-## In section "Fit lasso model and test inference using HDI", you can toggle index for 
+## In step 2. "Fit lasso model and test inference using desparsified lasso", you can toggle index for
 ## y between 1, 2, and 3 to test the pipeline for different genes.
