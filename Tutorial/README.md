@@ -107,56 +107,76 @@ Open and execute the script _lasso_tutorial.R_ to load all libraries and functio
 ## In Rstudio, find the path to the directory where the current script is located.
 current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
 
-
 ## load gene expression data
 genes <- load_gene_expr(paste0(current_dir,"/input/gene_expr_demo_lasso.txt"))
 dim(genes)
 
 ## load microbiome data
-microbes <- load_microbiome_abnd("microbiome_demo_lasso.txt")
+microbes <- load_microbiome_abnd(paste0(current_dir,"/input/microbiome_demo_lasso.txt"))
 dim(microbes)
 
 ## Ensure same samples in both genes and microbes data
 stopifnot(all(rownames(genes) == rownames(microbes)))
 
-y <- genes
-x <- microbes
+y <- genes #response
+x <- microbes #predictors
 ```
 
-Step 2: Fit lasso model and perform inference using desparsified lasso
+#### Step 2: Fit lasso model and perform inference using desparsified lasso
 ```R
-## Extract the expression for each gene
-y_i <- y[,i]
+## We are going to test three genes: WNT5A, RIPK3, and SMAP2 for their association with microbes
 
-## Make sure y_i is numeric before model fitting 
+## Extract expression of first gene in the matrix
+i <- 1 ## replace with 2 or 3 to test other two genes
+y_i <- y[,i]
+gene_name <- colnames(y)[i]
+
+## Make sure y_i is numeric before model fitting
 stopifnot(class(y_i) == "numeric")
 
 ## Fit lasso CV model
 fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
 bestlambda <- fit.model$bestlambda
 r.sqr <- fit.model$r.sqr
+r.sqr.adj <- fit.model$r.sqr.adj
 
-## Estimate sigma using the estimated lambda param
+## Estimate sigma and betainit using the estimated LOOCV lambda.
+## Sigma is the standard deviation of the error term or noise.
 sigma.myfun <- estimate.sigma.loocv(x, y_i, bestlambda, tol=1e-4)
 sigma <- sigma.myfun$sigmahat
-beta <- as.vector(sigma.myfun$betahat)[-1]
+beta <- as.vector(sigma.myfun$betahat)[-1] ## remove intercept term
+sigma.flag <- sigma.myfun$sigmaflag
 
-## Inference 
+## Inference using lasso projection method, also known as the de-sparsified Lasso,
+## using an asymptotic gaussian approximation to the distribution of the estimator.
 lasso.proj.fit <- lasso.proj(x, y_i, multiplecorr.method = "BH", betainit = beta, sigma = sigma, suppress.grouptesting = T)
-## Throws warning because we substituted our computed sigma (standard deviation of error term or noise)
+## A few lines of log messages appear here along with a warning about substituting sigma value (standard deviation of error term or noise)
+## because we substituted value of sigma using our computation above.
 # Warning message:
 #   Overriding the error variance estimate with your own value.
 
-## get 95% CI
+
+## get 95% confidence interval (CI)
 lasso.ci <- as.data.frame(confint(lasso.proj.fit, level = 0.95))
 
-## collect all metrics
-lasso.FDR.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)), 
-                           taxa = names(lasso.proj.fit$pval), 
-                           full_model_r_sqr = r.sqr,
-                           pval = lasso.proj.fit$pval, 
-                           ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
-                           row.names=NULL)
+## prep lasso output dataframe
+lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)),
+                       taxa = names(lasso.proj.fit$pval.corr),
+                       r.sqr = r.sqr, r.sqr.adj = r.sqr.adj,
+                       pval = lasso.proj.fit$pval, padj = lasso.proj.fit$pval.corr,
+                       ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
+                       sigma = sigma, sigma.flag = sigma.flag,
+                       row.names=NULL)
+
+## get rid of unecessary columns
+lasso.df$r.sqr.adj <- NULL
+lasso.df$padj <- NULL
+lasso.df$sigma <- NULL
+lasso.df$sigma.flag <- NULL
+
+## sort by p-value
+lasso.df <- lasso.df[order(lasso.df$pval),]
+head(lasso.df)
 ```
 
 
