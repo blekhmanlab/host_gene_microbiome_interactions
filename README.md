@@ -26,7 +26,7 @@ This script implements a lasso regression for each host gene’s expression as r
 #### - stabs_stability_selection.R
 This script performs stability selection (using R package _stabs_) for the lasso model to identify microbes robustly associated with host genes. This script also uses parallel execution framework described above.
 
-#### - postprocess_lasso_stabsel_output_V2.R
+#### - postprocess_lasso_stabsel_output.R
 This script performs postprocessing of lasso output and stability selection runs to identify significant and stability selected host gene-taxa associations.
 
 #### - identify_case_specific_associations_features.R
