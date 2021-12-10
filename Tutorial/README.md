@@ -206,10 +206,12 @@ head(stabsel.df)
 overlap_lasso_stabsel <- merge(lasso.df,stabsel.df, by = c("gene","taxa"))
 head(overlap_lasso_stabsel)
 ```
-For first two genes at index 1 and 2 in y (i.e. WNT5A and RIPK3), a taxa is stability selected, however, for the 3rd gene, no taxa is stability selected, hence we have an empty dataframe after merging outputs of lasso and stability selection.
 
 In step 2. "Fit lasso model and test inference using desparsified lasso", you can toggle index for
 y between 1, 2, and 3 to test the pipeline for different genes.
+
+For first two genes at index 1 and 2 in y (i.e. _WNT5A_ and _RIPK3_), a taxa is stability selected, however, for the third gene at index 3 (_SMAP2_), no taxa is stability selected, hence we have an empty dataframe after merging outputs of lasso and stability selection.
+
 
 For further processing of lasso output, please check [here](https://github.com/blekhmanlab/host_gene_microbiome_interactions/tree/main/lasso).
 
