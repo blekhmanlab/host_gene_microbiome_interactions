@@ -138,14 +138,12 @@ stopifnot(class(y_i) == "numeric")
 fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
 bestlambda <- fit.model$bestlambda
 r.sqr <- fit.model$r.sqr
-r.sqr.adj <- fit.model$r.sqr.adj
 
 ## Estimate sigma and betainit using the estimated LOOCV lambda.
 ## Sigma is the standard deviation of the error term or noise.
 sigma.myfun <- estimate.sigma.loocv(x, y_i, bestlambda, tol=1e-4)
 sigma <- sigma.myfun$sigmahat
 beta <- as.vector(sigma.myfun$betahat)[-1] ## remove intercept term
-sigma.flag <- sigma.myfun$sigmaflag
 
 ## Inference using lasso projection method, also known as the de-sparsified Lasso,
 ## using an asymptotic gaussian approximation to the distribution of the estimator.
@@ -162,17 +160,10 @@ lasso.ci <- as.data.frame(confint(lasso.proj.fit, level = 0.95))
 ## prep lasso output dataframe
 lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)),
                        taxa = names(lasso.proj.fit$pval.corr),
-                       r.sqr = r.sqr, r.sqr.adj = r.sqr.adj,
-                       pval = lasso.proj.fit$pval, padj = lasso.proj.fit$pval.corr,
+                       r.sqr = r.sqr,
+                       pval = lasso.proj.fit$pval,
                        ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
-                       sigma = sigma, sigma.flag = sigma.flag,
                        row.names=NULL)
-
-## remove columns not used downstream
-lasso.df$r.sqr.adj <- NULL
-lasso.df$padj <- NULL
-lasso.df$sigma <- NULL
-lasso.df$sigma.flag <- NULL
 
 ## sort by p-value
 lasso.df <- lasso.df[order(lasso.df$pval),]
