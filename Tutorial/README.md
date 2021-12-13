@@ -134,7 +134,7 @@ gene_name <- colnames(y)[i]
 ## Make sure y_i is numeric before model fitting
 stopifnot(class(y_i) == "numeric")
 
-## Fit lasso CV model
+## Fit lasso model using LOOCV
 fit.model <- fit.cv.lasso(x, y_i,  kfold = length(y_i))
 bestlambda <- fit.model$bestlambda
 r.sqr <- fit.model$r.sqr
@@ -145,7 +145,7 @@ sigma.myfun <- estimate.sigma.loocv(x, y_i, bestlambda, tol=1e-4)
 sigma <- sigma.myfun$sigmahat
 beta <- as.vector(sigma.myfun$betahat)[-1] ## remove intercept term
 
-## Inference using lasso projection method, also known as the de-sparsified Lasso,
+## Perform inference using lasso projection method, also known as the de-sparsified Lasso,
 ## using an asymptotic gaussian approximation to the distribution of the estimator.
 lasso.proj.fit <- lasso.proj(x, y_i, multiplecorr.method = "BH", betainit = beta, sigma = sigma, suppress.grouptesting = T)
 ## A few lines of log messages appear here along with a warning about substituting sigma value (i.e. standard deviation 
