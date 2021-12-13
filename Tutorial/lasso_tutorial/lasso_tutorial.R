@@ -90,7 +90,7 @@ fit.cv.lasso <- function(x, y_i, kfold){
                                                           s = cv.fit$lambda.min)) > 0))
   
   return(list(bestlambda = bestlambda, r.sqr = r_sqr_final_model, 
-              r.sqr.adj = r_sqr_final_adj #, r.sqr.CV.test = median(r.sqr.CV.test)
+              r.sqr.adj = r_sqr_final_adj
   ))
 }
 
@@ -111,7 +111,7 @@ adj_r_squared <- function(r_squared, n, p) {
 }
 
 
-# ############## Input lasso demo data #############
+############### Input lasso demo data #############
 
 # ## In Rstudio, find the path to the directory where the current script is located.
 # current_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -138,7 +138,7 @@ adj_r_squared <- function(r_squared, n, p) {
 # ## We are going to test three genes: WNT5A, RIPK3, and SMAP2 for their association with microbes
 # 
 # ## Extract expression of first gene in the matrix
-# i <- 1 ## replace with 2 or 3 to test other two genes
+# i <- 3 ## replace with 2 or 3 to test other two genes
 # y_i <- y[,i]
 # gene_name <- colnames(y)[i]
 # 
@@ -151,7 +151,6 @@ adj_r_squared <- function(r_squared, n, p) {
 # r.sqr <- fit.model$r.sqr ## note this will give us R^2 for the gene's final model fit using bestLambda
 # ## This R^2 reflects final model R^2 for this gene using all the microbes in the model,
 # ## and does not correspond to each gene-microbe pair.
-# r.sqr.adj <- fit.model$r.sqr.adj
 # 
 # ## Estimate sigma and betainit using the estimated LOOCV lambda.
 # ## Sigma is the standard deviation of the error term or noise.
@@ -174,17 +173,11 @@ adj_r_squared <- function(r_squared, n, p) {
 # ## prep lasso output dataframe
 # lasso.df <- data.frame(gene = rep(gene_name, length(lasso.proj.fit$pval)),
 #                        taxa = names(lasso.proj.fit$pval.corr),
-#                        r.sqr = r.sqr, r.sqr.adj = r.sqr.adj,
-#                        pval = lasso.proj.fit$pval, padj = lasso.proj.fit$pval.corr,
+#                        r.sqr = r.sqr,
+#                        pval = lasso.proj.fit$pval,
 #                        ci.lower = lasso.ci$lower, ci.upper = lasso.ci$upper,
-#                        sigma = sigma, sigma.flag = sigma.flag,
 #                        row.names=NULL)
 # 
-# ## get rid of unecessary columns
-# lasso.df$r.sqr.adj <- NULL
-# lasso.df$padj <- NULL
-# lasso.df$sigma <- NULL
-# lasso.df$sigma.flag <- NULL
 # 
 # ## sort by p-value
 # lasso.df <- lasso.df[order(lasso.df$pval),]
@@ -203,7 +196,6 @@ adj_r_squared <- function(r_squared, n, p) {
 # taxa.selected <- names(stab.glmnet$selected)
 # if(length(taxa.selected) == 0) taxa.selected <-"None"
 # 
-# # taxa.selected
 # 
 # stabsel.df <- data.frame("gene" = gene_name, "taxa" = taxa.selected)
 # if(taxa.selected == "none"){
