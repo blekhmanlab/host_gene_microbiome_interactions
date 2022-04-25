@@ -206,5 +206,5 @@ For first two genes at index 1 and 2 in y (i.e. _WNT5A_ and _RIPK3_), a taxa is 
 
 For further processing of lasso output, please check [here](https://github.com/blekhmanlab/host_gene_microbiome_interactions/tree/main/lasso).
 
-Please note that the parameters used in this tutorial are for the demo dataset used here. These parameters might need to be tweaked for different datasets.
+Please note that the parameters used in this tutorial are for the demo dataset used here. These parameters might need to be tweaked when working with different datasets.
 
